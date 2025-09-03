@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASローマ プレーヤーランキング</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* ダークブルー */
+            color: #e2e8f0; /* 薄いグレー */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #2d3748; /* ダークグレー */
+            border-radius: 1.5rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative; /* For admin login positioning */
+        }
+        .player-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            background-color: #4a5568; /* ミディアムグレー */
+            border-radius: 1rem;
+            padding: 1rem;
+            width: 100%;
+            min-height: 80px;
+            border: 3px solid transparent;
+        }
+        .player-card:hover {
+            background-color: #60728c;
+            transform: translateY(-5px);
+            box-shadow: 0 0 15px #10b981;
+        }
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #4a5568;
+        }
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+        .ranking-item-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        @media (min-width: 768px) {
+            .ranking-item-name {
+                font-size: 0.875rem;
+            }
+        }
+        #start-screen {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        #game-screen, #end-screen, #admin-screen {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+        #end-screen, #admin-screen {
+             padding: 2rem 0;
+        }
+        .end-message {
+            color: #f7fafc; /* 白 */
+            font-size: 0.875rem; /* 大幅に小さく */
+            font-weight: normal; /* 太字を解除 */
+        }
+        .start-button, .restart-button, .admin-back-button {
+            font-weight: bold;
+            padding: 0.75rem 2rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        .start-button {
+            background-color: #0d946f; /* 非ホバー時の色 */
+            color: #1a202c;
+        }
+        .start-button:hover {
+            background-color: #10b981; /* ホバー時の色 */
+        }
+        .quit-button {
+            background-color: #c53030;
+            color: #fff;
+            font-weight: bold;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        .quit-button:hover {
+            background-color: #e53e3e;
+        }
+        .restart-button, .admin-back-button {
+            background-color: #f97316; /* orange-500 */
+            color: #fff;
+            margin-top: 2rem;
+        }
+        .restart-button:hover, .admin-back-button:hover {
+            background-color: #ea580c; /* orange-600 */
+        }
+        #error-message {
+            color: #f87171; /* red-400 */
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            height: 1.25rem;
+        }
+        #end-screen .ranking-container, #admin-screen .ranking-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 2rem;
+        }
+        #admin-login {
+            position: absolute;
+            bottom: 1rem;
+            right: 1.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        #admin-login:hover {
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-inter">
+
+    <div class="container mx-auto">
+        <div id="main-content">
+            <h1 class="text-3xl font-bold text-center text-yellow-400 mb-0">ASローマ プレーヤーランキング</h1>
+            <p class="text-sm text-center text-yellow-400 mt-0 mb-6">in the last 20 years</p>
+
+            <!-- 開始画面 -->
+            <div id="start-screen">
+                <p class="text-xl font-semibold mb-0">いつからローマの試合を見ていますか？</p>
+                <p class="text-sm text-center text-gray-400 mt-1 mb-4">選択した年以降に在籍した選手のみが登場します</p>
+                <select id="year-select" class="bg-gray-700 text-gray-100 p-2 rounded-lg mb-4">
+                    <option value="" selected disabled>選択してください</option>
+                    <!-- プルダウンのオプションはJavaScriptで動的に生成 -->
+                </select>
+                <button id="start-button" class="start-button">開始</button>
+                <div id="error-message"></div>
+            </div>
+
+            <!-- メインゲーム画面 -->
+            <div id="game-screen">
+                <p class="text-xl font-semibold mb-0 text-center">ローマでより活躍した選手は？</p>
+                <p class="text-sm text-center text-gray-400 mt-0">比較が難しいケースもあると思いますが、判断基準は設けませんので、自身で納得のいくように答えてください</p>
+                <p class="text-sm text-center text-gray-400 mt-0 mb-2">「in the last 20 years」としていますが、20年以上所属している選手は、全所属期間を評価対象としてください</p>
+                <div class="border border-gray-600 rounded-lg p-2 mb-4 text-center">
+                    <p class="text-sm text-gray-400">現在の回答数</p>
+                    <p id="matchup-count" class="text-lg font-bold text-yellow-400"></p>
+                </div>
+
+                <div id="matchup-container" class="flex flex-col md:flex-row justify-center items-center gap-6 w-full">
+                    <div id="player1-card" class="player-card">
+                        <p id="player1-name" class="text-lg font-semibold text-center"></p>
+                    </div>
+                    <span class="text-3xl font-bold text-white">VS</span>
+                    <div id="player2-card" class="player-card">
+                        <p id="player2-name" class="text-lg font-semibold text-center"></p>
+                    </div>
+                </div>
+                
+                <button id="quit-button" class="quit-button">もうやめる</button>
+
+                <div class="w-full mt-8">
+                    <h2 class="text-xl font-bold text-center mb-0">現在のランキング</h2>
+                    <p class="text-sm text-center text-gray-400 mb-4">（あなた個人のランキング）</p>
+                    <ul id="ranking-list" class="ranking-list bg-gray-700 rounded-lg p-4"></ul>
+                </div>
+            </div>
+            
+            <!-- 終了画面 -->
+            <div id="end-screen">
+                <h1 id="end-message" class="end-message mb-4"></h1>
+                <div class="ranking-container">
+                    <h2 class="text-xl font-bold text-center mb-0">あなたの最終ランキング</h2>
+                    <p class="text-sm text-center text-gray-400 mb-4">（あなた個人のランキング）</p>
+                    <ul id="final-ranking-list" class="ranking-list bg-gray-700 rounded-lg p-4"></ul>
+                </div>
+                <button id="restart-button" class="restart-button">開始画面に戻る</button>
+            </div>
+
+            <!-- 管理者画面 -->
+            <div id="admin-screen">
+                <div class="ranking-container">
+                    <h2 class="text-xl font-bold text-center mb-0">総合ランキング</h2>
+                     <p class="text-sm text-center text-gray-400 mb-4">（全ユーザーの集計結果）</p>
+                    <ul id="admin-ranking-list" class="ranking-list bg-gray-700 rounded-lg p-4"></ul>
+                </div>
+                <button id="admin-back-button" class="admin-back-button">開始画面に戻る</button>
+            </div>
+
+        </div>
+        <div id="admin-login">管理者画面</div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebaseのセットアップ
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+            } else {
+                 try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Authentication failed:", error);
+                }
+            }
+        });
+
+
+        // 選手のデータを定義
+        const allPlayersData = [
+            { name: "フランチェスコ・トッティ", startYear: 1992, endYear: 2017 },
+            { name: "ダニエレ・デ・ロッシ", startYear: 2001, endYear: 2019 },
+            { name: "ヴィンチェンツォ・モンテッラ", startYear: 1999, endYear: 2007 },
+            { name: "ラジャ・ナインゴラン", startYear: 2014, endYear: 2018 },
+            { name: "モハメド・サラー", startYear: 2015, endYear: 2017 },
+            { name: "エディン・ジェコ", startYear: 2015, endYear: 2021 },
+            { name: "パウロ・ディバラ", startYear: 2022, endYear: null },
+            { name: "ロレンツォ・ペッレグリーニ", startYear: 2015, endYear: null },
+            { name: "クリス・スモーリング", startYear: 2019, endYear: 2024 },
+            { name: "タミー・エイブラハム", startYear: 2021, endYear: 2025 },
+            { name: "アデム・リャイッチ", startYear: 2013, endYear: 2015 },
+            { name: "ミラレム・ピャニッチ", startYear: 2011, endYear: 2016 },
+            { name: "フィリップ・メクセス", startYear: 2004, endYear: 2011 },
+            { name: "シモーネ・ペロッタ", startYear: 2004, endYear: 2013 },
+            { name: "ロドリゴ・タッデイ", startYear: 2005, endYear: 2014 },
+            { name: "クリスティアン・キヴ", startYear: 2003, endYear: 2007 },
+            { name: "ミルコ・ヴチニッチ", startYear: 2006, endYear: 2011 },
+            { name: "ドニ", startYear: 2005, endYear: 2011 },
+            { name: "ジュリオ・セルジオ", startYear: 2009, endYear: 2013 },
+            { name: "マールテン・ステケレンブルフ", startYear: 2011, endYear: 2013 },
+            { name: "モルガン・デ・サンクティス", startYear: 2013, endYear: 2016 },
+            { name: "ロビン・オルセン", startYear: 2018, endYear: 2021 },
+            { name: "ヴォイチェフ・シュチェスニー", startYear: 2015, endYear: 2017 },
+            { name: "アリソン", startYear: 2016, endYear: 2018 },
+            { name: "アントニオ・ミランテ", startYear: 2018, endYear: 2021 },
+            { name: "パウ・ロペス", startYear: 2019, endYear: 2021 },
+            { name: "ルイ・パトリシオ", startYear: 2021, endYear: 2024 },
+            { name: "ミレ・スヴィラル", startYear: 2022, endYear: null },
+            { name: "マッテオ・フェラーリ", startYear: 2001, endYear: 2005 },
+            { name: "クリスティアン・パヌッチ", startYear: 2001, endYear: 2009 },
+            { name: "マックス・トネット", startYear: 2006, endYear: 2010 },
+            { name: "シシーニョ", startYear: 2007, endYear: 2012 },
+            { name: "マルコ・カセッティ", startYear: 2006, endYear: 2012 },
+            { name: "ヨン・アルネ・リーセ", startYear: 2008, endYear: 2011 },
+            { name: "ファン(2007～)", startYear: 2007, endYear: 2011 },
+            { name: "マルコ・モッタ", startYear: 2009, endYear: 2011 },
+            { name: "ホセ・アンヘル", startYear: 2011, endYear: 2013 },
+            { name: "ニコラス・ブルディッソ", startYear: 2009, endYear: 2014 },
+            { name: "ガブリエル・エインセ", startYear: 2011, endYear: 2012 },
+            { name: "シモン・ケアー", startYear: 2011, endYear: 2012 },
+            { name: "マルキーニョス", startYear: 2012, endYear: 2013 },
+            { name: "イヴァン・ピリス", startYear: 2012, endYear: 2013 },
+            { name: "ドドー", startYear: 2012, endYear: 2014 },
+            { name: "フェデリコ・バルザレッティ", startYear: 2012, endYear: 2015 },
+            { name: "レアンドロ・カスタン", startYear: 2012, endYear: 2018 },
+            { name: "メディ・ベナティア", startYear: 2013, endYear: 2014 },
+            { name: "ヴァシリス・トロシディス", startYear: 2013, endYear: 2016 },
+            { name: "マイコン", startYear: 2013, endYear: 2016 },
+            { name: "ダヴィデ・アストーリ", startYear: 2014, endYear: 2015 },
+            { name: "ヨゼ・ホレバス", startYear: 2014, endYear: 2015 },
+            { name: "マプー・ヤンガ＝エムビワ", startYear: 2014, endYear: 2016 },
+            { name: "コスタス・マノラス", startYear: 2014, endYear: 2019 },
+            { name: "リュカ・ディーニュ", startYear: 2015, endYear: 2016 },
+            { name: "アントニオ・リュディガー", startYear: 2015, endYear: 2017 },
+            { name: "ファン・ジェズス", startYear: 2016, endYear: 2021 },
+            { name: "エメルソン・パルミエリ", startYear: 2015, endYear: 2018 },
+            { name: "フェデリコ・ファシオ", startYear: 2016, endYear: 2022 },
+            { name: "アレッサンドロ・フロレンツィ", startYear: 2011, endYear: 2022 },
+            { name: "ブルーノ・ペレス", startYear: 2016, endYear: 2021 },
+            { name: "アレクサンダル・コラロフ", startYear: 2017, endYear: 2020 },
+            { name: "リック・カルスドルプ", startYear: 2017, endYear: 2024 },
+            { name: "ダヴィデ・サントン", startYear: 2018, endYear: 2022 },
+            { name: "レオナルド・スピナッツォーラ", startYear: 2019, endYear: 2024 },
+            { name: "ロジェール・イバニェス", startYear: 2020, endYear: 2023 },
+            { name: "ジャンルカ・マンチーニ", startYear: 2019, endYear: null },
+            { name: "マラシュ・クンブラ", startYear: 2020, endYear: 2024 },
+            { name: "マティアス・ビーニャ", startYear: 2021, endYear: 2023 },
+            { name: "ゼキ・チェリク", startYear: 2022, endYear: null },
+            { name: "ラスムス・クリステンセン", startYear: 2023, endYear: 2024 },
+            { name: "ディエゴ・ジョレンテ", startYear: 2023, endYear: 2024 },
+            { name: "エヴァン・エンディカ", startYear: 2023, endYear: null },
+            { name: "アンヘリーニョ", startYear: 2024, endYear: null },
+            { name: "マッツ・フンメルス", startYear: 2024, endYear: 2025 },
+            { name: "アルベルト・アクイラーニ", startYear: 2002, endYear: 2009 },
+            { name: "マンシーニ", startYear: 2003, endYear: 2008 },
+            { name: "マッテオ・ブリーギ", startYear: 2007, endYear: 2014 },
+            { name: "レアンドロ・グレコ", startYear: 2004, endYear: 2014 },
+            { name: "ダビド・ピサーロ", startYear: 2006, endYear: 2012 },
+            { name: "ジュリオ・バチスタ", startYear: 2008, endYear: 2011 },
+            { name: "ファビオ・シンプリシオ", startYear: 2010, endYear: 2012 },
+            { name: "フェルナンド・ガゴ", startYear: 2011, endYear: 2012 },
+            { name: "マルキーニョ", startYear: 2012, endYear: 2013 },
+            { name: "マイケル・ブラッドリー", startYear: 2012, endYear: 2014 },
+            { name: "ケヴィン・ストロートマン", startYear: 2013, endYear: 2018 },
+            { name: "ウィリアム・ヴァンクール", startYear: 2015, endYear: 2017 },
+            { name: "セイドゥ・ケイタ", startYear: 2014, endYear: 2016 },
+            { name: "レアンドロ・パレデス", startYear: 2014, endYear: 2025 },
+            { name: "ブライアン・クリスタンテ", startYear: 2018, endYear: null },
+            { name: "スティーブン・エンゾンジ", startYear: 2018, endYear: 2021 },
+            { name: "ハビエル・パストーレ", startYear: 2018, endYear: 2021 },
+            { name: "アマドゥ・ディアワラ", startYear: 2019, endYear: 2022 },
+            { name: "ゴンサロ・ビジャール", startYear: 2020, endYear: 2023 },
+            { name: "ヘンリク・ムヒタリアン", startYear: 2019, endYear: 2022 },
+            { name: "ジョルダン・ヴェレトゥ", startYear: 2019, endYear: 2022 },
+            { name: "ニコロ・ザニオーロ", startYear: 2018, endYear: 2023 },
+            { name: "セルジオ・オリベイラ", startYear: 2022, endYear: 2022 },
+            { name: "エドアルド・ボーヴェ", startYear: 2021, endYear: null },
+            { name: "ニコラ・ザレフスキ", startYear: 2021, endYear: 2025 },
+            { name: "ネマニャ・マティッチ", startYear: 2022, endYear: 2023 },
+            { name: "ジョルジニオ・ワイナルドゥム", startYear: 2022, endYear: 2023 },
+            { name: "ニッコロ・ピジッリ", startYear: 2022, endYear: null },
+            { name: "トンマーゾ・バルダンツィ", startYear: 2024, endYear: null },
+            { name: "マヌ・コネ", startYear: 2024, endYear: null },
+            { name: "アレクシス・サーレマーケルス", startYear: 2024, endYear: 2025 },
+            { name: "ジェレミー・メネズ", startYear: 2008, endYear: 2011 },
+            { name: "リュドヴィク・ジュリ", startYear: 2007, endYear: 2008 },
+            { name: "エリク・ラメラ", startYear: 2011, endYear: 2013 },
+            { name: "ルカ・トーニ", startYear: 2010, endYear: 2011 },
+            { name: "ボージャン・クルキッチ", startYear: 2011, endYear: 2012 },
+            { name: "パブロ・オスバルド", startYear: 2011, endYear: 2013 },
+            { name: "ファビオ・ボリーニ", startYear: 2011, endYear: 2012 },
+            { name: "マルコ・ボリエッロ", startYear: 2010, endYear: 2015 },
+            { name: "マッティア・デストロ", startYear: 2012, endYear: 2015 },
+            { name: "ジェルヴィーニョ", startYear: 2013, endYear: 2016 },
+            { name: "ファン・イトゥルベ", startYear: 2014, endYear: 2018 },
+            { name: "イアゴ・ファルケ", startYear: 2015, endYear: 2016 },
+            { name: "ステファン・エル・シャーラウィ", startYear: 2016, endYear: null },
+            { name: "パトリック・シック", startYear: 2017, endYear: 2020 },
+            { name: "ディエゴ・ペロッティ", startYear: 2016, endYear: 2020 },
+            { name: "ジャスティン・クライファート", startYear: 2018, endYear: 2022 },
+            { name: "ジェンギズ・ウンデル", startYear: 2017, endYear: 2021 },
+            { name: "ボルハ・マジョラル", startYear: 2020, endYear: 2022 },
+            { name: "ペドロ", startYear: 2020, endYear: 2021 },
+            { name: "アンドレア・ベロッティ", startYear: 2022, endYear: 2024 },
+            { name: "エルドル・ショムロドフ", startYear: 2021, endYear: 2024 },
+            { name: "ロメル・ルカク", startYear: 2023, endYear: 2024 },
+            { name: "アルテム・ドフビク", startYear: 2024, endYear: null },
+            { name: "マティアス・スーレ", startYear: 2024, endYear: null }
+        ];
+
+        let scores = {};
+        let activePlayers = [];
+        let allMatchups = [];
+        let matchupIndex = 0;
+
+        // DOM要素を取得
+        const mainContent = document.getElementById('main-content');
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const adminScreen = document.getElementById('admin-screen');
+        const endMessage = document.getElementById('end-message');
+        const startButton = document.getElementById('start-button');
+        const quitButton = document.getElementById('quit-button');
+        const yearSelect = document.getElementById('year-select');
+        const errorMessage = document.getElementById('error-message');
+        const player1Card = document.getElementById('player1-card');
+        const player2Card = document.getElementById('player2-card');
+        const player1Name = document.getElementById('player1-name');
+        const player2Name = document.getElementById('player2-name');
+        const rankingList = document.getElementById('ranking-list');
+        const finalRankingList = document.getElementById('final-ranking-list');
+        const adminRankingList = document.getElementById('admin-ranking-list');
+        const matchupCountDisplay = document.getElementById('matchup-count');
+        const adminLoginButton = document.getElementById('admin-login');
+        
+        let currentMatchup = [];
+
+        // Fisher-Yates shuffleアルゴリズム
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 新しい対戦を生成し、UIを更新
+        function generateMatchup() {
+            if (matchupIndex >= allMatchups.length) {
+                endGame(true);
+                return;
+            }
+            currentMatchup = allMatchups[matchupIndex];
+            player1Name.textContent = currentMatchup[0];
+            player2Name.textContent = currentMatchup[1];
+            matchupIndex++;
+            matchupCountDisplay.textContent = `${matchupIndex} / ${allMatchups.length}`;
+        }
+
+        // ゲーム終了処理
+        async function endGame(isComplete) {
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'flex';
+            endMessage.innerHTML = 'ご協力ありがとうございます。<br>後日、参加者全員の回答を集計して、全体の最終結果をなんらかの形で発表する予定です。';
+            if (isComplete) {
+                endMessage.innerHTML = '<span class="font-bold text-emerald-400">すべての比較パターンを回答しました。</span><br>' + endMessage.innerHTML;
+            }
+            updateRanking(finalRankingList, scores);
+
+            // Save results to Firestore
+            if (userId && (Object.keys(scores).length > 0)) {
+                try {
+                    const docRef = doc(db, `/artifacts/${appId}/public/data/rankings`, userId);
+                    await setDoc(docRef, {
+                        scores: scores,
+                        completed: isComplete,
+                        timestamp: serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error("Error saving data to Firestore:", error);
+                }
+            }
+        }
+
+        // ランキングを更新して表示
+        function updateRanking(rankingElement, scoresData) {
+            const rankedPlayers = Object.entries(scoresData).filter(([, score]) => score.wins > 0 || score.losses > 0);
+            rankedPlayers.sort(([, scoreA], [, scoreB]) => {
+                const diffA = scoreA.wins - scoreA.losses;
+                const diffB = scoreB.wins - scoreB.losses;
+                if (diffB !== diffA) return diffB - diffA;
+                return scoreB.wins - scoreA.wins;
+            });
+            
+            rankingElement.innerHTML = '<li><div class="p-4 text-center text-gray-400">まだ回答がありません。</div></li>';
+            if(rankedPlayers.length > 0) rankingElement.innerHTML = '';
+            
+            let currentRank = 1;
+            rankedPlayers.forEach(([playerName, score], index) => {
+                if (index > 0) {
+                    const [, previousPlayerScore] = rankedPlayers[index - 1];
+                    if (score.wins !== previousPlayerScore.wins || score.losses !== previousPlayerScore.losses) {
+                        currentRank = index + 1;
+                    }
+                }
+                const li = document.createElement('li');
+                li.className = 'ranking-item';
+                li.innerHTML = `
+                    <span class="ranking-item-name">${currentRank}. ${playerName}</span>
+                    <span class="text-xs md:text-sm text-yellow-400 font-bold">${score.wins}勝${score.losses}敗</span>
+                `;
+                rankingElement.appendChild(li);
+            });
+        }
+
+        player1Card.addEventListener('click', () => {
+            const [winner, loser] = currentMatchup;
+            if (winner && loser) {
+                scores[winner].wins++;
+                scores[loser].losses++;
+                updateRanking(rankingList, scores);
+                generateMatchup();
+            }
+        });
+
+        player2Card.addEventListener('click', () => {
+            const [loser, winner] = currentMatchup;
+            if (winner && loser) {
+                scores[winner].wins++;
+                scores[loser].losses++;
+                updateRanking(rankingList, scores);
+                generateMatchup();
+            }
+        });
+
+        startButton.addEventListener('click', () => {
+            const selectedValue = yearSelect.value;
+            errorMessage.textContent = '';
+            if (selectedValue === "") {
+                errorMessage.textContent = "年代を選択してください。";
+                return;
+            }
+
+            activePlayers = (selectedValue === "before2006")
+                ? allPlayersData
+                : allPlayersData.filter(p => (p.endYear || new Date().getFullYear()) >= parseInt(selectedValue, 10));
+            
+            if (activePlayers.length < 2) {
+                errorMessage.textContent = "選択した年代では比較できる選手が2人以上いません。";
+                return;
+            }
+
+            scores = {};
+            activePlayers.forEach(p => scores[p.name] = { wins: 0, losses: 0 });
+
+            allMatchups = [];
+            for (let i = 0; i < activePlayers.length; i++) {
+                for (let j = i + 1; j < activePlayers.length; j++) {
+                    allMatchups.push([activePlayers[i].name, activePlayers[j].name]);
+                }
+            }
+            shuffleArray(allMatchups);
+            matchupIndex = 0;
+
+            startScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            
+            updateRanking(rankingList, scores);
+            matchupCountDisplay.textContent = `${matchupIndex} / ${allMatchups.length}`;
+            generateMatchup();
+        });
+
+        quitButton.addEventListener('click', () => endGame(false));
+        
+        document.getElementById('restart-button').addEventListener('click', () => {
+            endScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
+            yearSelect.value = "";
+            finalRankingList.innerHTML = '';
+            errorMessage.textContent = '';
+        });
+
+        adminLoginButton.addEventListener('click', () => {
+            const password = prompt('パスワードを入力してください:');
+            if (password === 'roma2025') {
+                showAdminScreen();
+            } else if (password !== null) {
+                alert('パスワードが違います。');
+            }
+        });
+
+        async function showAdminScreen() {
+            mainContent.style.display = 'none';
+            adminScreen.style.display = 'flex';
+            adminRankingList.innerHTML = '<li><div class="p-4 text-center">データを集計中...</div></li>';
+            
+            try {
+                const rankingsCol = collection(db, `/artifacts/${appId}/public/data/rankings`);
+                const snapshot = await getDocs(rankingsCol);
+                const totalScores = {};
+                
+                snapshot.forEach(doc => {
+                    const userScores = doc.data().scores;
+                    for (const playerName in userScores) {
+                        if (!totalScores[playerName]) {
+                            totalScores[playerName] = { wins: 0, losses: 0 };
+                        }
+                        totalScores[playerName].wins += userScores[playerName].wins;
+                        totalScores[playerName].losses += userScores[playerName].losses;
+                    }
+                });
+                
+                updateRanking(adminRankingList, totalScores);
+
+            } catch (error) {
+                console.error("Error loading admin data:", error);
+                adminRankingList.innerHTML = '<li><div class="p-4 text-center text-red-400">データの読み込みに失敗しました。</div></li>';
+            }
+        }
+
+        document.getElementById('admin-back-button').addEventListener('click', () => {
+            adminScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+            startScreen.style.display = 'flex';
+        });
+        
+        window.onload = function() {
+            const currentYear = new Date().getFullYear();
+            let selectHtml = '';
+            for (let year = currentYear; year >= 2007; year--) {
+                selectHtml += `<option value="${year}">${year}年</option>`;
+            }
+            selectHtml += `<option value="before2006">2006年以前</option>`;
+            yearSelect.innerHTML += selectHtml;
+        }
+
+    </script>
+</body>
+</html>
+
