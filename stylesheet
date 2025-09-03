@@ -79,13 +79,13 @@
             align-items: center;
             width: 100%;
         }
-        #game-screen, #end-screen, #admin-screen {
+        #game-screen, #end-screen, #admin-screen, #admin-login-screen {
             display: none;
             width: 100%;
             flex-direction: column;
             align-items: center;
         }
-        #end-screen, #admin-screen {
+        #end-screen, #admin-screen, #admin-login-screen {
              padding: 2rem 0;
         }
         .end-message {
@@ -129,7 +129,7 @@
         .restart-button:hover, .admin-back-button:hover {
             background-color: #ea580c; /* orange-600 */
         }
-        #error-message {
+        #error-message, #admin-error-message {
             color: #f87171; /* red-400 */
             margin-top: 0.5rem;
             font-size: 0.875rem;
@@ -212,18 +212,31 @@
                 </div>
                 <button id="restart-button" class="restart-button">開始画面に戻る</button>
             </div>
-
-            <!-- 管理者画面 -->
-            <div id="admin-screen">
-                <div class="ranking-container">
-                    <h2 class="text-xl font-bold text-center mb-0">総合ランキング</h2>
-                     <p class="text-sm text-center text-gray-400 mb-4">（全ユーザーの集計結果）</p>
-                    <ul id="admin-ranking-list" class="ranking-list bg-gray-700 rounded-lg p-4"></ul>
-                </div>
-                <button id="admin-back-button" class="admin-back-button">開始画面に戻る</button>
-            </div>
-
         </div>
+        
+        <!-- 管理者ログイン画面 -->
+        <div id="admin-login-screen">
+            <h2 class="text-2xl font-bold text-center text-yellow-400 mb-6">管理者ログイン</h2>
+            <div class="w-full max-w-xs">
+                <label for="admin-password-input" class="sr-only">パスワード</label>
+                <input type="password" id="admin-password-input" class="bg-gray-700 text-gray-100 p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="パスワード">
+                <button id="admin-submit-button" class="w-full font-bold p-3 rounded-full bg-yellow-400 text-gray-900 hover:bg-yellow-300 transition-colors">ログイン</button>
+                <div id="admin-error-message" class="text-center"></div>
+            </div>
+            <button id="admin-login-back-button" class="admin-back-button">開始画面に戻る</button>
+        </div>
+
+        <!-- 管理者画面 -->
+        <div id="admin-screen">
+            <div class="ranking-container">
+                <h2 class="text-xl font-bold text-center mb-0">総合ランキング</h2>
+                 <p class="text-sm text-center text-gray-400 mb-4">（全ユーザーの集計結果）</p>
+                <ul id="admin-ranking-list" class="ranking-list bg-gray-700 rounded-lg p-4"></ul>
+            </div>
+            <button id="admin-back-button" class="admin-back-button">開始画面に戻る</button>
+        </div>
+
+
         <div id="admin-login">管理者画面</div>
     </div>
     
@@ -401,6 +414,7 @@
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
         const adminScreen = document.getElementById('admin-screen');
+        const adminLoginScreen = document.getElementById('admin-login-screen');
         const endMessage = document.getElementById('end-message');
         const startButton = document.getElementById('start-button');
         const quitButton = document.getElementById('quit-button');
@@ -415,6 +429,10 @@
         const adminRankingList = document.getElementById('admin-ranking-list');
         const matchupCountDisplay = document.getElementById('matchup-count');
         const adminLoginButton = document.getElementById('admin-login');
+        const adminPasswordInput = document.getElementById('admin-password-input');
+        const adminSubmitButton = document.getElementById('admin-submit-button');
+        const adminLoginBackButton = document.getElementById('admin-login-back-button');
+        const adminErrorMessage = document.getElementById('admin-error-message');
         
         let currentMatchup = [];
 
@@ -517,10 +535,12 @@
 
         startButton.addEventListener('click', () => {
             const selectedValue = yearSelect.value;
-            errorMessage.textContent = '';
-            if (selectedValue === "") {
+            errorMessage.textContent = ''; // 先にエラーメッセージをクリア
+
+            // 年が選択されているかチェック
+            if (!selectedValue) { // selectedValueが空文字("")の場合にtrueになる
                 errorMessage.textContent = "年代を選択してください。";
-                return;
+                return; // 年が選択されていない場合はここで処理を中断
             }
 
             activePlayers = (selectedValue === "before2006")
@@ -563,16 +583,30 @@
         });
 
         adminLoginButton.addEventListener('click', () => {
-            const password = prompt('パスワードを入力してください:');
-            if (password === 'roma2025') {
+            mainContent.style.display = 'none';
+            adminLoginScreen.style.display = 'flex';
+            adminPasswordInput.value = '';
+            adminErrorMessage.textContent = '';
+        });
+
+        adminSubmitButton.addEventListener('click', () => {
+            if (adminPasswordInput.value === 'roma2025') {
+                adminLoginScreen.style.display = 'none';
                 showAdminScreen();
-            } else if (password !== null) {
-                alert('パスワードが違います。');
+            } else {
+                adminErrorMessage.textContent = 'パスワードが違います。';
             }
         });
 
+        adminLoginBackButton.addEventListener('click', () => {
+            adminLoginScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+            startScreen.style.display = 'flex';
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'none';
+        });
+
         async function showAdminScreen() {
-            mainContent.style.display = 'none';
             adminScreen.style.display = 'flex';
             adminRankingList.innerHTML = '<li><div class="p-4 text-center">データを集計中...</div></li>';
             
@@ -604,17 +638,18 @@
             adminScreen.style.display = 'none';
             mainContent.style.display = 'block';
             startScreen.style.display = 'flex';
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'none';
         });
         
-        window.onload = function() {
-            const currentYear = new Date().getFullYear();
-            let selectHtml = '';
-            for (let year = currentYear; year >= 2007; year--) {
-                selectHtml += `<option value="${year}">${year}年</option>`;
-            }
-            selectHtml += `<option value="before2006">2006年以前</option>`;
-            yearSelect.innerHTML += selectHtml;
+        // window.onload を削除し、スクリプトが読み込まれた時点で直接実行するように変更します。
+        const currentYear = new Date().getFullYear();
+        let selectHtml = '';
+        for (let year = currentYear; year >= 2007; year--) {
+            selectHtml += `<option value="${year}">${year}年</option>`;
         }
+        selectHtml += `<option value="before2006">2006年以前</option>`;
+        yearSelect.innerHTML += selectHtml;
 
     </script>
 </body>
